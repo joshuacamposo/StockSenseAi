@@ -178,3 +178,5 @@ out/                    Generated static export (after npm run build)
 ---
 
 **Academic note:** StockSense AI is submitted as an interactive prototype. It must not be used to manage real inventory or real personal data. See [docs/SECURITY_LIMITATIONS.md](docs/SECURITY_LIMITATIONS.md) before demonstrating or extending it.
+#   S t o c k S e n s e A i  
+ 
