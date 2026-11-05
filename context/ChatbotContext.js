@@ -16,19 +16,20 @@ import { useWalkthrough } from '@/hooks/useWalkthrough';
 import { respond } from '@/lib/chatbot/responseEngine';
 import {
   SUPPORTED_LANGUAGES,
-  UI_TEXT,
   uiText,
 } from '@/lib/chatbot/languageDictionary';
+import {
+  DEFAULT_LANGUAGE_MODE,
+  indicatorFor,
+  languageNotice,
+  loadLanguageMode,
+  normalizeLanguageMode,
+  saveLanguageMode,
+} from '@/lib/chatbot/languagePreferences';
 import { CHAT_STORAGE_KEY, readLocal, writeLocal } from '@/lib/storage';
 import { newId } from '@/lib/id';
 
 const ChatbotContext = createContext(null);
-
-const LANGUAGE_CONFIRM = {
-  en: "Okay — I'll continue in English.",
-  tl: 'Sige — magpapatuloy tayo sa Tagalog.',
-  ceb: 'Sige — magpadayon kita sa Cebuano.',
-};
 
 function welcomeMessage(language = 'en') {
   const copy = uiText(language);
@@ -38,6 +39,7 @@ function welcomeMessage(language = 'en') {
     text: copy.welcome,
     quickReplies: copy.welcomeSuggestions.slice(0, 4),
     at: new Date().toISOString(),
+    indicator: indicatorFor(language),
     welcome: true,
   };
 }
@@ -61,8 +63,10 @@ export function ChatbotProvider({ children }) {
   const { startTour } = useWalkthrough();
 
   const [language, setLanguage] = useState('en');
+  const [languageMode, setLanguageMode] = useState(DEFAULT_LANGUAGE_MODE);
   const [messages, setMessages] = useState([]);
   const [lastProductId, setLastProductId] = useState(null);
+  const [visualTarget, setVisualTarget] = useState(null);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -73,13 +77,17 @@ export function ChatbotProvider({ children }) {
   stateRef.current = { products, suppliers, transactions, recommendations, settings, user };
 
   useEffect(() => {
+    const savedMode = loadLanguageMode();
+    setLanguageMode(savedMode);
+    if (savedMode !== 'auto') setLanguage(savedMode);
+
     const saved = readSavedConversation();
     if (saved) {
-      setLanguage(saved.language);
+      setLanguage(savedMode === 'auto' ? saved.language : savedMode);
       setMessages(saved.messages);
       setLastProductId(saved.lastProductId);
     } else {
-      setMessages([welcomeMessage('en')]);
+      setMessages([welcomeMessage(savedMode === 'auto' ? 'en' : savedMode)]);
     }
     setReady(true);
     return () => {
@@ -92,6 +100,11 @@ export function ChatbotProvider({ children }) {
     if (!ready) return;
     writeLocal(CHAT_STORAGE_KEY, { language, messages, lastProductId });
   }, [ready, language, messages, lastProductId]);
+
+  useEffect(() => {
+    if (!ready) return;
+    saveLanguageMode(languageMode);
+  }, [ready, languageMode]);
 
   const sendMessage = useCallback(
     (rawText) => {
@@ -115,6 +128,7 @@ export function ChatbotProvider({ children }) {
           state: stateRef.current,
           user: stateRef.current.user,
           language,
+          languageMode,
           lastProductId,
         });
       } catch (error) {
@@ -122,6 +136,7 @@ export function ChatbotProvider({ children }) {
         result = {
           ok: false,
           language,
+          indicator: indicatorFor(language),
           text: 'The local assistant hit an unexpected problem. No inventory data was changed. Please try rephrasing your question.',
           quickReplies: [],
           action: null,
@@ -132,6 +147,11 @@ export function ChatbotProvider({ children }) {
       const timer = setTimeout(() => {
         if (result.language && result.language !== language && SUPPORTED_LANGUAGES.includes(result.language)) {
           setLanguage(result.language);
+        }
+        // An explicit in-message language request ("speak Tagalog") switches to a manual mode.
+        // Automatic detection keeps the mode at "auto" so it can continue following the user.
+        if (result.languageMode && result.languageMode !== 'auto' && result.languageMode !== languageMode) {
+          setLanguageMode(normalizeLanguageMode(result.languageMode));
         }
         if (result.intent === 'clear_chat') {
           setMessages([welcomeMessage(result.language || language)]);
@@ -146,6 +166,9 @@ export function ChatbotProvider({ children }) {
               action: result.action || null,
               quickReplies: result.quickReplies || [],
               intent: result.intent || null,
+              indicator: result.indicator || indicatorFor(result.language || language),
+              confidence: result.confidence || null,
+              visualTarget: result.visualTarget || null,
               at: new Date().toISOString(),
             },
           ]);
@@ -156,7 +179,7 @@ export function ChatbotProvider({ children }) {
 
       timers.current.push(timer);
     },
-    [language, lastProductId, typing]
+    [language, languageMode, lastProductId, typing]
   );
 
   const clearChat = useCallback(() => {
@@ -164,34 +187,55 @@ export function ChatbotProvider({ children }) {
     timers.current = [];
     setTyping(false);
     setLastProductId(null);
+    setVisualTarget(null);
     setMessages([welcomeMessage(language)]);
   }, [language]);
 
-  const changeLanguage = useCallback(
-    (nextLanguage) => {
-      if (!SUPPORTED_LANGUAGES.includes(nextLanguage) || nextLanguage === language) return;
-      setLanguage(nextLanguage);
+  const changeLanguageMode = useCallback(
+    (nextMode) => {
+      const normalized = normalizeLanguageMode(nextMode);
+      if (normalized === languageMode) return;
+      setLanguageMode(normalized);
+
+      const noticeLanguage =
+        normalized === 'auto'
+          ? SUPPORTED_LANGUAGES.includes(language)
+            ? language
+            : 'en'
+          : normalized;
+      setLanguage(noticeLanguage);
       setMessages((previous) => [
         ...previous,
         {
           id: newId('msg'),
           role: 'assistant',
-          text: LANGUAGE_CONFIRM[nextLanguage] || LANGUAGE_CONFIRM.en,
-          quickReplies: uiText(nextLanguage).welcomeSuggestions.slice(0, 3),
+          text: languageNotice(normalized, noticeLanguage),
+          quickReplies: uiText(noticeLanguage).welcomeSuggestions.slice(0, 3),
+          indicator: indicatorFor(noticeLanguage),
           at: new Date().toISOString(),
           languageNotice: true,
         },
       ]);
     },
-    [language]
+    [language, languageMode]
   );
 
   const runAction = useCallback(
     (action) => {
       if (!action) return;
+      const keepChatOpen = Boolean(action.target?.selector?.includes('chatbot-'));
       if (action.type === 'navigate' && action.href) {
-        setOpen(false);
-        router.push(action.href);
+        if (!keepChatOpen) setOpen(false);
+        if (action.target) {
+          setVisualTarget({ ...action.target, requestId: newId('guide') });
+        } else {
+          router.push(action.href);
+        }
+        return;
+      }
+      if (action.type === 'highlight' && action.target) {
+        if (!keepChatOpen) setOpen(false);
+        setVisualTarget({ ...action.target, requestId: newId('guide') });
         return;
       }
       if (action.type === 'tour' && action.tourId) {
@@ -203,6 +247,8 @@ export function ChatbotProvider({ children }) {
     },
     [router, startTour]
   );
+
+  const dismissVisualTarget = useCallback(() => setVisualTarget(null), []);
 
   const openChat = useCallback(() => setOpen(true), []);
   const closeChat = useCallback(() => setOpen(false), []);
@@ -216,13 +262,17 @@ export function ChatbotProvider({ children }) {
       expanded,
       typing,
       language,
+      languageMode,
       languageLabel: uiText(language).subtitle,
       ui: uiText(language),
       messages,
       lastProductId,
+      visualTarget,
       sendMessage,
       clearChat,
-      changeLanguage,
+      changeLanguage: changeLanguageMode,
+      changeLanguageMode,
+      dismissVisualTarget,
       runAction,
       openChat,
       closeChat,
@@ -230,10 +280,12 @@ export function ChatbotProvider({ children }) {
       toggleExpanded,
     }),
     [
-      changeLanguage,
+      changeLanguageMode,
       clearChat,
+      dismissVisualTarget,
       expanded,
       language,
+      languageMode,
       lastProductId,
       messages,
       open,
@@ -245,6 +297,7 @@ export function ChatbotProvider({ children }) {
       toggleChat,
       toggleExpanded,
       typing,
+      visualTarget,
     ]
   );
 

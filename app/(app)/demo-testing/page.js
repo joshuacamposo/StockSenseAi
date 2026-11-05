@@ -158,7 +158,7 @@ export default function DemoTestsPage() {
     <div>
       <PageHeader
         title="Demo &amp; Testing Center"
-        eyebrow="16 isolated automated checks"
+        eyebrow={`${TEST_COUNT} isolated automated checks`}
         icon={FlaskConical}
         subtitle={`Run rule-level checks against fresh fixtures for ${user?.title || 'this demo'}. Tests never read or write your live inventory, and no result is marked PASS until the test actually runs.`}
         badges={
@@ -193,7 +193,7 @@ export default function DemoTestsPage() {
         <StatCard
           label="Registered tests"
           value={TEST_COUNT}
-          hint="Exactly 16 demonstration checks"
+          hint={`Exactly ${TEST_COUNT} demonstration checks`}
           icon={TestTubeDiagonal}
           tone="brand"
         />

@@ -24,6 +24,7 @@ import {
   cn,
 } from '@/components/ui';
 import { getStatusForStock, planStockMovement } from '@/lib/inventoryRules';
+import { usePageFilter } from '@/hooks/usePageFilter';
 import { formatUnits } from '@/lib/format';
 
 export default function StockTransactionForm({ type, products, onSubmit }) {
@@ -40,6 +41,13 @@ export default function StockTransactionForm({ type, products, onSubmit }) {
       setProductId(products[0]?.id || '');
     }
   }, [products, productId]);
+
+  usePageFilter('stock:preselect', (detail) => {
+    if (detail?.transactionType && detail.transactionType !== (isIn ? 'in' : 'out')) return;
+    if (detail?.productId && products.some((item) => item.id === detail.productId)) {
+      setProductId(detail.productId);
+    }
+  });
 
   const product = products.find((item) => item.id === productId) || null;
   const preview =
@@ -158,6 +166,7 @@ export default function StockTransactionForm({ type, products, onSubmit }) {
         >
           <Input
             id={`${prefix}-remarks`}
+            data-tour={`${prefix}-remarks`}
             value={remarks}
             onChange={(event) => setRemarks(event.target.value)}
             placeholder={isIn ? 'Supplier delivery reference…' : 'Department or purpose…'}

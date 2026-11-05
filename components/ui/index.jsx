@@ -188,7 +188,10 @@ export function DemoNote({ className = '' }) {
 
 export function PageHeader({ title, subtitle, eyebrow, actions, badges, icon: Icon }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div
+      className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+      data-tour="page-header"
+    >
       <div className="flex items-start gap-3">
         {Icon ? (
           <span className="mt-0.5 hidden h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-600/10 text-brand-700 sm:grid">

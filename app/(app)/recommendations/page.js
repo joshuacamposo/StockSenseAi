@@ -189,6 +189,7 @@ export default function RecommendationsPage() {
                 return (
                   <div
                     key={recommendation.id}
+                    data-tour={`recommendation-card-${recommendation.productId}`}
                     className="rounded-2xl border border-amber-200 bg-gradient-to-b from-amber-50/70 to-white p-4"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -250,7 +251,7 @@ export default function RecommendationsPage() {
                         icon={CheckCircle2}
                         disabled={!canDecide}
                         onClick={() => openDecision(recommendation, 'approved')}
-                        data-tour="reorder-approval-button"
+                        data-tour={`approve-reorder-${recommendation.productId}`}
                         title={canDecide ? 'Approve recommendation' : 'Administrator or Business Owner only'}
                       >
                         Approve
@@ -261,7 +262,7 @@ export default function RecommendationsPage() {
                         icon={XCircle}
                         disabled={!canDecide}
                         onClick={() => openDecision(recommendation, 'rejected')}
-                        data-tour="reorder-reject-button"
+                        data-tour={`reject-reorder-${recommendation.productId}`}
                         className="text-rose-600"
                         title={canDecide ? 'Reject recommendation' : 'Administrator or Business Owner only'}
                       >

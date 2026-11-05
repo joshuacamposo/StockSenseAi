@@ -39,6 +39,7 @@ import {
   transactionColumns,
 } from '@/lib/reportGenerator';
 import { RECOMMENDATION_STATUS } from '@/lib/recommendations';
+import { usePageFilter } from '@/hooks/usePageFilter';
 import { formatMoney, formatNumber } from '@/lib/format';
 
 const TABS = [
@@ -62,6 +63,10 @@ export default function ReportsPage() {
   const { products, suppliers, transactions, recommendations, settings } = useApp();
   const [tab, setTab] = useState('inventory');
   const [search, setSearch] = useState('');
+
+  usePageFilter('reports:tab', (detail) => {
+    if (detail?.tab && TABS.some((item) => item.key === detail.tab)) setTab(detail.tab);
+  });
 
   const report = useMemo(() => {
     if (tab === 'low-stock') {

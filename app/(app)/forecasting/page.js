@@ -25,6 +25,7 @@ import {
   cn,
 } from '@/components/ui';
 import ForecastChart from '@/components/charts/ForecastChart';
+import { usePageFilter } from '@/hooks/usePageFilter';
 import { buildForecast, formatCoverage } from '@/lib/forecasting';
 import { getStockStatus } from '@/lib/inventoryRules';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
@@ -47,6 +48,12 @@ export default function ForecastingPage() {
   const [productId, setProductId] = useState('');
   const [periodDays, setPeriodDays] = useState(settings.forecastPeriodDays || 30);
   const [horizonDays, setHorizonDays] = useState(settings.forecastHorizonDays || 30);
+
+  usePageFilter('forecasting:product', (detail) => {
+    if (detail?.productId && activeProducts.some((item) => item.id === detail.productId)) {
+      setProductId(detail.productId);
+    }
+  });
 
   useEffect(() => {
     if (!activeProducts.some((product) => product.id === productId)) {

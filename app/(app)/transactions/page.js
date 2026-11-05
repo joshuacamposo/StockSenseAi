@@ -24,6 +24,7 @@ import {
   Tabs,
   cn,
 } from '@/components/ui';
+import { usePageFilter } from '@/hooks/usePageFilter';
 import { formatDateTime, formatNumber, formatUnits } from '@/lib/format';
 
 const TYPE_TABS = [
@@ -36,6 +37,11 @@ export default function TransactionsPage() {
   const { transactions, products, settings } = useApp();
   const [type, setType] = useState('all');
   const [search, setSearch] = useState('');
+
+  usePageFilter('transactions:search', (detail) => {
+    if (detail?.query) setSearch(detail.query);
+    if (detail?.productId) setType('all');
+  });
 
   const unitById = useMemo(() => {
     const map = new Map();

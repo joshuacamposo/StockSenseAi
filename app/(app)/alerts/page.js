@@ -28,11 +28,17 @@ import {
   cn,
 } from '@/components/ui';
 import { calculateRecommendedQty, getStockStatus } from '@/lib/inventoryRules';
+import { usePageFilter } from '@/hooks/usePageFilter';
 import { formatNumber, formatUnits } from '@/lib/format';
 
 export default function AlertsPage() {
   const { alerts, pendingRecommendations, canDo, stats } = useApp();
   const [tab, setTab] = useState('all');
+
+  usePageFilter('alerts:filter', (detail) => {
+    if (detail?.severity === 'low' || detail?.severity === 'out') setTab(detail.severity);
+    if (detail?.severity === 'all') setTab('all');
+  });
 
   const filtered = useMemo(() => {
     if (tab === 'all') return alerts;

@@ -89,6 +89,7 @@ export default function Topbar({ onMenu }) {
         <div ref={bellRef} className="relative">
           <button
             type="button"
+            data-tour="notifications-bell"
             onClick={() => setBellOpen((value) => !value)}
             className="relative grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
             aria-label="Notifications"

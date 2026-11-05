@@ -7,6 +7,7 @@ import { useApp } from '@/context/AppProvider';
 import { getRoutePermission } from '@/lib/permissions';
 import { AccessDeniedState, FullScreenLoader } from '@/components/ui';
 import ChatbotWidget from '@/components/chatbot/ChatbotWidget';
+import SmartVisualGuide from '@/components/chatbot/SmartVisualGuide';
 import WalkthroughOverlay from '@/components/walkthrough/WalkthroughOverlay';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -54,6 +55,7 @@ export default function AppShell({ children }) {
         </main>
       </div>
       <WalkthroughOverlay />
+      <SmartVisualGuide />
       <ChatbotWidget />
     </div>
   );

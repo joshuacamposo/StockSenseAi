@@ -34,6 +34,7 @@ import {
 } from '@/components/ui';
 import ProductFormModal from '@/components/inventory/ProductFormModal';
 import ProductDetailsModal from '@/components/inventory/ProductDetailsModal';
+import { usePageFilter } from '@/hooks/usePageFilter';
 import { PRODUCT_CATEGORIES, getStockStatus } from '@/lib/inventoryRules';
 import { formatMoney, formatUnits } from '@/lib/format';
 
@@ -110,6 +111,12 @@ export default function ProductsPage() {
   }, [products]);
 
   const hasFilters = search !== '' || category !== 'all' || statusFilter !== 'all';
+
+  usePageFilter('products:search', (detail) => {
+    setSearch(detail.sku || detail.name || '');
+    setCategory('all');
+    setStatusFilter('all');
+  });
 
   const openAddForm = () => {
     setEditingProduct(null);
@@ -303,10 +310,10 @@ export default function ProductsPage() {
                   return (
                     <tr
                       key={product.id}
-                      data-tour={product.id === filteredProducts[0].id ? 'product-row' : undefined}
+                      data-tour={`product-row-${product.id}`}
                       className={!product.active ? 'opacity-60' : undefined}
                     >
-                      <td>
+                      <td data-tour={`product-name-cell-${product.id}`}>
                         <div className="flex items-center gap-2.5">
                           <span
                             className={cn(
@@ -336,18 +343,18 @@ export default function ProductsPage() {
                       <td>
                         <span className="text-[12px] text-slate-600">{product.category}</span>
                       </td>
-                      <td>
+                      <td data-tour={`stock-cell-${product.id}`}>
                         <p className="text-[13px] font-extrabold text-slate-900">{product.stock}</p>
                         <p className="text-[10px] text-slate-400">of {product.targetStock} target</p>
                       </td>
-                      <td className="text-[12px] text-slate-600">{product.reorderLevel}</td>
-                      <td>
+                      <td data-tour={`reorder-cell-${product.id}`} className="text-[12px] text-slate-600">{product.reorderLevel}</td>
+                      <td data-tour={`status-cell-${product.id}`}>
                         <StatusBadge product={product} />
                       </td>
-                      <td className="whitespace-nowrap text-[12px] font-semibold text-slate-700">
+                      <td data-tour={`price-cell-${product.id}`} className="whitespace-nowrap text-[12px] font-semibold text-slate-700">
                         {formatMoney(product.unitPrice)}
                       </td>
-                      <td>
+                      <td data-tour={`supplier-cell-${product.id}`}>
                         <span className="text-[11.5px] text-slate-600">
                           {getSupplierName(product.supplierId)}
                         </span>
@@ -370,11 +377,7 @@ export default function ProductsPage() {
                               className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-brand-50 hover:text-brand-700"
                               title="Edit product"
                               aria-label={`Edit ${product.name}`}
-                              data-tour={
-                                product.id === filteredProducts[0].id
-                                  ? 'edit-product-button'
-                                  : undefined
-                              }
+                              data-tour={`edit-product-button-${product.id}`}
                             >
                               <Pencil size={15} />
                             </button>

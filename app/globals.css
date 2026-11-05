@@ -133,6 +133,24 @@
   pointer-events: none;
 }
 
+@keyframes guide-glow {
+  0%, 100% { outline-color: rgba(34, 211, 238, 0.6); }
+  50% { outline-color: rgba(34, 211, 238, 1); }
+}
+
+.smart-guide-spotlight {
+  outline: 2px solid rgba(34, 211, 238, 0.9);
+  outline-offset: 0;
+  animation: guide-glow 2s ease-in-out infinite;
+  transition: top 0.15s ease, left 0.15s ease, width 0.15s ease, height 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smart-guide-spotlight {
+    animation: none;
+  }
+}
+
 @media print {
   .no-print { display: none !important; }
 }

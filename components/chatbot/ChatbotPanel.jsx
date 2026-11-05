@@ -15,7 +15,32 @@ import {
 } from 'lucide-react';
 import { useChatbot } from '@/hooks/useChatbot';
 import { cn } from '@/components/ui';
-import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '@/lib/chatbot/languageDictionary';
+import {
+  LANGUAGE_MODES,
+  languageModeLabel,
+  modeButtonLabel,
+} from '@/lib/chatbot/languagePreferences';
+
+const INDICATOR_STYLES = {
+  EN: 'bg-sky-50 text-sky-700 ring-sky-200',
+  TL: 'bg-amber-50 text-amber-700 ring-amber-200',
+  BIS: 'bg-violet-50 text-violet-700 ring-violet-200',
+};
+
+function LanguageIndicator({ indicator }) {
+  if (!indicator) return null;
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold uppercase leading-none tracking-wide ring-1 ring-inset',
+        INDICATOR_STYLES[indicator] || INDICATOR_STYLES.EN
+      )}
+      title={`Response language: ${indicator}`}
+    >
+      {indicator}
+    </span>
+  );
+}
 
 function AssistantBubble({ message, isLast, onQuickReply, onAction }) {
   return (
@@ -24,8 +49,13 @@ function AssistantBubble({ message, isLast, onQuickReply, onAction }) {
         <Bot size={14} />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="inline-block max-w-full whitespace-pre-line break-words rounded-2xl rounded-tl-md border border-slate-200 bg-white px-3.5 py-2.5 text-[12.5px] leading-relaxed text-slate-700 shadow-sm">
-          {message.text}
+        <div className="flex items-start gap-1.5">
+          <div className="inline-block max-w-full whitespace-pre-line break-words rounded-2xl rounded-tl-md border border-slate-200 bg-white px-3.5 py-2.5 text-[12.5px] leading-relaxed text-slate-700 shadow-sm">
+            {message.text}
+          </div>
+          <span className="mt-1 shrink-0">
+            <LanguageIndicator indicator={message.indicator} />
+          </span>
         </div>
 
         {message.action ? (
@@ -34,7 +64,13 @@ function AssistantBubble({ message, isLast, onQuickReply, onAction }) {
             onClick={() => onAction(message.action)}
             className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-2.5 py-1.5 text-[11.5px] font-semibold text-white shadow-sm transition hover:bg-brand-700"
           >
-            {message.action.type === 'tour' ? <Compass size={13} /> : <ChevronRight size={13} />}
+            {message.action.type === 'tour' ? (
+              <Compass size={13} />
+            ) : message.action.type === 'highlight' ? (
+              <Sparkles size={13} />
+            ) : (
+              <ChevronRight size={13} />
+            )}
             {message.action.label || 'Continue'}
           </button>
         ) : null}
@@ -92,11 +128,12 @@ export default function ChatbotPanel() {
     expanded,
     typing,
     language,
+    languageMode,
     ui,
     messages,
     sendMessage,
     clearChat,
-    changeLanguage,
+    changeLanguageMode,
     runAction,
     closeChat,
     toggleExpanded,
@@ -191,21 +228,22 @@ export default function ChatbotPanel() {
           <Check size={11} className="text-emerald-500" />
           Reads the same live inventory state
         </span>
-        <div className="flex items-center gap-1" role="group" aria-label="Assistant language">
-          {SUPPORTED_LANGUAGES.map((code) => (
+        <div className="flex items-center gap-1" role="group" aria-label="Assistant language mode">
+          {LANGUAGE_MODES.map((mode) => (
             <button
-              key={code}
+              key={mode}
               type="button"
-              onClick={() => changeLanguage(code)}
+              onClick={() => changeLanguageMode(mode)}
+              aria-pressed={languageMode === mode}
               className={cn(
                 'rounded-md px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide transition',
-                language === code
+                languageMode === mode
                   ? 'bg-brand-600 text-white'
                   : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
               )}
-              title={LANGUAGE_LABELS[code]}
+              title={`${languageModeLabel(mode, language)}${mode === 'auto' ? ' — follows the language of your message' : ' — manual override'}`}
             >
-              {code === 'ceb' ? 'Bis' : code}
+              {modeButtonLabel(mode)}
             </button>
           ))}
         </div>
